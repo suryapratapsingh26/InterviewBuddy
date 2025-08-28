@@ -5,7 +5,7 @@ import { Mona_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/firebase/client";
 import { signOut } from "@/lib/actions/auth.action";
 import Link from "next/link";
@@ -40,11 +40,27 @@ export default function RootLayout({
 
   const handleSignOut = async () => {
     try {
+      // 1. Sign out from Firebase client-side
+      await firebaseSignOut(auth);
+
+      // 2. Clear server-side session cookie
       await signOut();
+
+      // 3. Clear local user state
       setUser(null);
-      router.push("/");
+
+      // 4. Clear any cached data
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+
+      // 5. Force redirect to home page
+      window.location.href = "/";
     } catch (error) {
       console.error("Error signing out:", error);
+      // Force redirect even if there's an error
+      window.location.href = "/";
     }
   };
 
